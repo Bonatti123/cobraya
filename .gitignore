@@ -1,0 +1,16 @@
+# Datos locales del negocio (ventas, respaldos, PIN)
+datos/
+*.db
+*.db-wal
+*.db-shm
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Sistema
+.DS_Store
+Thumbs.db
+*.log
