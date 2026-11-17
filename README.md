@@ -66,7 +66,7 @@ No se necesita internet para operar la caja; solo para enviar comprobantes al OS
 ## 4. Arrancar en 30 segundos
 
 ```bash
-git clone https://github.com/TU-USUARIO/cobraya.git
+git clone https://github.com/Bonatti123/cobraya.git
 cd cobraya
 python3 servidor.py
 ```
