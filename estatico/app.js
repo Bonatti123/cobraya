@@ -39,6 +39,8 @@ const fechaCorta = (texto) => {
 /* Enlace público a la boleta (solo si la app corre en un dominio accesible).
    En la red local el enlace no le serviría al cliente desde sus datos. */
 const enlacePublico = (ventaId) => {
+  // En Netlify no existe /api/boleta: el enlace no le serviría al cliente.
+  if (window.COBRAYA_DEMO) return '';
   const host = location.hostname;
   const privado = host === 'localhost' || host === '127.0.0.1' ||
     /^10\./.test(host) || /^192\.168\./.test(host) ||
@@ -228,11 +230,13 @@ async function iniciar() {
       mostrar('#pantalla-setup');
       const aviso = $('#setup-modo');
       if (aviso) {
-        aviso.textContent = info.emision_activa
-          ? 'Emisión electrónica activa en esta instalación.'
-          : 'Emisión electrónica no activada. Podrás configurar tu negocio, pero no vender hasta que se active.';
+        aviso.textContent = info.demo
+          ? 'Modo demostración: los datos quedan en este navegador y no se envían a SUNAT.'
+          : info.emision_activa
+            ? 'Emisión electrónica activa en esta instalación.'
+            : 'Emisión electrónica no activada. Podrás configurar tu negocio, pero no vender hasta que se active.';
         aviso.classList.remove('oculto');
-        aviso.classList.toggle('alerta', !info.emision_activa);
+        aviso.classList.toggle('alerta', !info.demo && !info.emision_activa);
       }
       return;
     }
@@ -283,17 +287,26 @@ function pintarNegocio() {
   document.title = negocio.nombre ? `${negocio.nombre} · CobraYa` : 'CobraYa · caja y boleta';
   $('#saludo-negocio').textContent = (negocio.nombre || 'vecino').split(' ')[0];
   const pill = $('#pill-sunat');
-  const activa = negocio.sunat_modo === 'nubefact';
-  pill.textContent = activa ? 'SUNAT' : 'sin activar';
-  pill.classList.toggle('real', activa);
-  pill.title = activa
-    ? 'Emisión activa: los comprobantes se envían a SUNAT mediante el proveedor autorizado.'
-    : 'Emisión no activada: no se pueden emitir comprobantes.';
+  const demo = negocio.sunat_modo === 'demo';
+  const activa = Boolean(negocio.emision_activa);
+  pill.textContent = demo ? 'DEMO' : activa ? 'SUNAT' : 'sin activar';
+  pill.classList.toggle('real', activa && !demo);
+  pill.classList.toggle('demo', demo);
+  pill.title = demo
+    ? 'Demostración: los datos quedan en este navegador y no se envían a SUNAT.'
+    : activa
+      ? 'Emisión activa: los comprobantes se envían a SUNAT mediante el proveedor autorizado.'
+      : 'Emisión no activada: no se pueden emitir comprobantes.';
 
   const banner = $('#banner-emision');
   if (banner) {
-    banner.classList.toggle('oculto', activa);
-    if (!activa) {
+    banner.classList.toggle('oculto', activa || demo);
+    banner.classList.toggle('demo', demo);
+    if (demo) {
+      banner.classList.remove('oculto');
+      $('#banner-emision-texto').textContent =
+        'Demostración: los datos quedan en este navegador y no se envían a SUNAT.';
+    } else if (!activa) {
       $('#banner-emision-texto').textContent =
         'Emisión electrónica no activada. No se pueden emitir comprobantes. Avisa a quien instaló CobraYa.';
     }
@@ -410,12 +423,14 @@ function iconoBoleta() {
 
 function filaVenta(venta) {
   const estadoSunat = venta.estado === 'anulada' ? 'anulada' : venta.sunat_estado;
-  const etiqueta = {
+  const demo = estado.negocio && estado.negocio.sunat_modo === 'demo';
+  const etiqueta = demo ? 'demo' : ({
     aceptada: 'SUNAT ✓',
     error: 'SUNAT !',
     pendiente: 'pendiente',
     anulada: 'anulada',
-  }[estadoSunat] || '';
+  }[estadoSunat] || '');
+  const claseEstado = demo && estadoSunat !== 'anulada' ? 'pendiente' : estadoSunat;
   return `
     <button class="venta ${venta.estado === 'anulada' ? 'anulada' : ''}" type="button" data-venta="${venta.id}">
       <span class="venta-icono">${iconoBoleta()}</span>
@@ -425,7 +440,7 @@ function filaVenta(venta) {
       </span>
       <span class="venta-der">
         <span class="venta-monto">${soles(venta.total)}</span>
-        <span class="venta-estado ${estadoSunat}">${etiqueta}</span>
+        <span class="venta-estado ${claseEstado}">${etiqueta}</span>
       </span>
     </button>`;
 }
@@ -570,13 +585,16 @@ function pintarCarrito() {
 
   $('#btn-cobrar-total').textContent = soles(total);
   $('#btn-cobrar').disabled = !estado.carrito.length;
-  const activa = estado.negocio && estado.negocio.sunat_modo === 'nubefact';
-  const modo = activa
-    ? 'Se enviará a SUNAT mediante el proveedor autorizado.'
-    : 'Emisión no activada: no se puede cobrar todavía.';
+  const demo = estado.negocio && estado.negocio.sunat_modo === 'demo';
+  const activa = Boolean(estado.negocio && estado.negocio.emision_activa);
+  const modo = demo
+    ? 'Demostración: no se envía a SUNAT.'
+    : activa
+      ? 'Se enviará a SUNAT mediante el proveedor autorizado.'
+      : 'Emisión no activada: no se puede cobrar todavía.';
   $('#nota-sunat').textContent = `${esFactura ? 'Factura' : 'Boleta'}: ${modo}`;
-  $('#nota-sunat').classList.toggle('alerta', !activa);
-  $('#btn-cobrar').disabled = !estado.carrito.length || !activa;
+  $('#nota-sunat').classList.toggle('alerta', !activa && !demo);
+  $('#btn-cobrar').disabled = !estado.carrito.length || (!activa && !demo);
   ajustarCamposComprobante();
 }
 
@@ -759,7 +777,9 @@ function mostrarExito(venta) {
   if (pendiente) {
     sunat.textContent = venta.sunat_mensaje;
   } else if (venta.sunat_estado === 'aceptada') {
-    sunat.textContent = 'Aceptada por SUNAT.';
+    sunat.textContent = estado.negocio && estado.negocio.sunat_modo === 'demo'
+      ? 'Guardada en la demostración (no enviada a SUNAT).'
+      : 'Aceptada por SUNAT.';
   } else {
     sunat.textContent = venta.sunat_mensaje || 'Quedó pendiente el envío a SUNAT.';
   }
@@ -849,7 +869,8 @@ async function abrirDetalle(id, refrescarSilencioso = false) {
 
     const sunatClase = venta.sunat_estado === 'aceptada' ? 'ok' : venta.sunat_estado === 'error' ? 'mal' : '';
     const puedeReintentar = venta.estado !== 'anulada' && venta.sunat_estado !== 'aceptada'
-      && estado.negocio && estado.negocio.emision_activa;
+      && estado.negocio && estado.negocio.emision_activa
+      && estado.negocio.sunat_modo !== 'demo';
 
     $('#detalle-contenido').innerHTML = `
       <div class="hoja-cab">
@@ -926,11 +947,14 @@ function pintarAjustes() {
   $('#neg-igv').value = negocio.igv ?? 18;
 
   const real = negocio.sunat_modo === 'nubefact';
+  const demo = negocio.sunat_modo === 'demo';
   const estadoEmision = $('#estado-emision');
   if (estadoEmision) {
-    estadoEmision.textContent = real
-      ? 'Emisión activa: los comprobantes se envían a SUNAT mediante el proveedor autorizado.'
-      : 'Emisión no activada en esta instalación. No se pueden emitir comprobantes.';
+    estadoEmision.textContent = demo
+      ? 'Demostración activa: los datos quedan en este navegador y no se envían a SUNAT.'
+      : real
+        ? 'Emisión activa: los comprobantes se envían a SUNAT mediante el proveedor autorizado.'
+        : 'Emisión no activada en esta instalación. No se pueden emitir comprobantes.';
   }
 
   const catalogo = estado.productos;

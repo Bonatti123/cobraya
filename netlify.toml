@@ -1,0 +1,18 @@
+# CobraYa · configuración de Netlify
+# Netlify solo publica la interfaz y la demostración del navegador.
+# El servidor real (Python + SQLite) se ejecuta en la PC del negocio.
+
+[build]
+  publish = "estatico"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"

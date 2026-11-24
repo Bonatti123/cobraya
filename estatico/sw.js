@@ -2,11 +2,12 @@
    Guarda el "cascarón" de la app para que abra rápido y funcione sin señal.
    Las llamadas a /api/ siempre van a la red: nunca se cachean ventas. */
 
-const CACHE = 'cobraya-v5';
+const CACHE = 'cobraya-v6';
 const CASCARON = [
   '/',
   '/index.html',
   '/estilos.css',
+  '/demo.js',
   '/app.js',
   '/manifest.webmanifest',
   '/iconos/favicon.svg',

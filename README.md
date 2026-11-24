@@ -23,6 +23,7 @@ misma red Wi-Fi, sin depender de la nube.
 | Interfaz | **HTML5** semántico |
 | Estilos | **CSS3** (responsive, tema claro/oscuro, variables CSS) |
 | PWA | `manifest.webmanifest` + **Service Worker** para uso sin conexión |
+| Demo pública | JavaScript + `localStorage` (sin backend), publicada en **Netlify** |
 | PDF | Generador propio en Python (`pdf.py`), sin librerías externas |
 | API | HTTP/JSON con `http.server` de la biblioteca estándar |
 | Seguridad | PBKDF2-HMAC-SHA256 para el PIN y cookies `HttpOnly` |
@@ -95,6 +96,27 @@ python3 servidor.py --host 127.0.0.1   # solo esta computadora
 python3 servidor.py --reset-pin        # si olvidaste el PIN
 ./iniciar.sh 8787                      # arrancar con un puerto
 ```
+
+### Probar sin instalar: demo pública
+
+Si solo quieres ver cómo funciona la app, abre:
+
+**https://cobray.netlify.app/**
+
+La demo corre completa en el navegador y guarda todo en `localStorage`:
+
+- Permite crear el negocio, editar el catálogo, vender, anular y ver reportes.
+- Genera una boleta y un resumen imprimible con la marca **DEMO**.
+- **No envía nada a SUNAT** y los comprobantes no tienen validez tributaria.
+- Cada visitante ve sus propios datos: no hay base compartida ni cuentas.
+- Si olvidas el PIN de la demo, borra los datos del sitio en el navegador.
+
+La app real (la que emite comprobantes) es la que se instala en la PC; Netlify solo
+publica archivos y no puede ejecutar Python ni SQLite.
+
+Para desplegar la demo en tu propia cuenta de Netlify, conecta este repositorio y usa
+`netlify.toml` (ya incluye `publish = "estatico"`). La demo se activa sola en dominios
+`*.netlify.app` o al abrir la app con `?demo=1`.
 
 ### Instalar en el celular (PWA)
 
@@ -228,9 +250,11 @@ cobraya/
 │   ├── index.html              interfaz
 │   ├── estilos.css             diseño responsive + tema oscuro
 │   ├── app.js                  lógica del navegador (JS puro)
+│   ├── demo.js                 demo pública: API falsa en el navegador
 │   ├── manifest.webmanifest    metadatos PWA
 │   ├── sw.js                   caché offline
 │   └── iconos/                 íconos PNG
+├── netlify.toml                publica la demo estática en Netlify
 ├── herramientas/
 │   ├── configurar_emision.py   activa o desactiva la emisión
 │   └── generar_iconos.py       íconos PNG sin dependencias

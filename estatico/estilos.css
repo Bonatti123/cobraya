@@ -280,6 +280,7 @@ input:focus {
   border: 1px solid color-mix(in srgb, var(--ambar) 25%, transparent);
 }
 .pill.real { background: var(--marca-suave); color: var(--marca); border-color: color-mix(in srgb, var(--marca) 25%, transparent); }
+.pill.demo { background: #fef3e7; color: #b54708; border-color: #f6d9b8; }
 
 #btn-tema .icono-luna { display: none; }
 [data-tema="oscuro"] #btn-tema .icono-sol { display: none; }
@@ -559,6 +560,12 @@ main {
   color: var(--rojo);
   border-bottom: 1px solid color-mix(in srgb, var(--rojo) 30%, transparent);
   font-weight: 600;
+}
+
+.banner-emision.demo {
+  background: #fef3e7;
+  color: #b54708;
+  border-bottom: 1px solid #f6d9b8;
 }
 
 .opciones-modo { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
